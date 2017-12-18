@@ -1,0 +1,8 @@
+OLD/
+
+# exclude parcels from Git
+parcels/CDH/*.parcel
+parcels/CDH/manifest.json
+
+parcels/KAFKA/*.parcel
+parcels/KAFA/manifest.json

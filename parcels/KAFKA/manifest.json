@@ -1,0 +1,145 @@
+{
+    "lastUpdated": 15063777350000,
+    "parcels": [
+        {
+            "parcelName": "KAFKA-2.1.2-1.2.1.2.p0.6-jessie.parcel",
+            "components": [
+                {
+                    "pkg_version": "0.10.0+kafka2.1.2",
+                    "pkg_release": "1.2.1.2.p0.7",
+                    "name": "kafka",
+                    "version": "0.10.0-kafka2.1.2"
+                }
+            ],
+            "depends": "CDH (>= 5.2), CDH (<< 6.0)",
+            "replaces": "CLABS_KAFKA",
+            "hash": "1eca359ae0a66b3441b4811bca900bc78ea6cd7c"
+        },
+        {
+            "parcelName": "KAFKA-2.1.2-1.2.1.2.p0.6-el7.parcel",
+            "components": [
+                {
+                    "pkg_version": "0.10.0+kafka2.1.2",
+                    "pkg_release": "1.2.1.2.p0.7",
+                    "name": "kafka",
+                    "version": "0.10.0-kafka2.1.2"
+                }
+            ],
+            "depends": "CDH (>= 5.2), CDH (<< 6.0)",
+            "replaces": "CLABS_KAFKA",
+            "hash": "87bb5f359ec5b4a6abbcedbe50890cda4b3f6a2a"
+        },
+        {
+            "parcelName": "KAFKA-2.1.2-1.2.1.2.p0.6-precise.parcel",
+            "components": [
+                {
+                    "pkg_version": "0.10.0+kafka2.1.2",
+                    "pkg_release": "1.2.1.2.p0.7",
+                    "name": "kafka",
+                    "version": "0.10.0-kafka2.1.2"
+                }
+            ],
+            "depends": "CDH (>= 5.2), CDH (<< 6.0)",
+            "replaces": "CLABS_KAFKA",
+            "hash": "99b56c19bfc3b2f32105d1cfdb1e89c30e5f664d"
+        },
+        {
+            "parcelName": "KAFKA-2.1.2-1.2.1.2.p0.6-xenial.parcel",
+            "components": [
+                {
+                    "pkg_version": "0.10.0+kafka2.1.2",
+                    "pkg_release": "1.2.1.2.p0.7",
+                    "name": "kafka",
+                    "version": "0.10.0-kafka2.1.2"
+                }
+            ],
+            "depends": "CDH (>= 5.2), CDH (<< 6.0)",
+            "replaces": "CLABS_KAFKA",
+            "hash": "0f7499f2ce036121ca85a0d77fe3417f64a9f3d5"
+        },
+        {
+            "parcelName": "KAFKA-2.1.2-1.2.1.2.p0.6-sles12.parcel",
+            "components": [
+                {
+                    "pkg_version": "0.10.0+kafka2.1.2",
+                    "pkg_release": "1.2.1.2.p0.7",
+                    "name": "kafka",
+                    "version": "0.10.0-kafka2.1.2"
+                }
+            ],
+            "depends": "CDH (>= 5.2), CDH (<< 6.0)",
+            "replaces": "CLABS_KAFKA",
+            "hash": "5407d21b000a66ee117521adda8c3170a72e4a3a"
+        },
+        {
+            "parcelName": "KAFKA-2.1.2-1.2.1.2.p0.6-el5.parcel",
+            "components": [
+                {
+                    "pkg_version": "0.10.0+kafka2.1.2",
+                    "pkg_release": "1.2.1.2.p0.7",
+                    "name": "kafka",
+                    "version": "0.10.0-kafka2.1.2"
+                }
+            ],
+            "depends": "CDH (>= 5.2), CDH (<< 6.0)",
+            "replaces": "CLABS_KAFKA",
+            "hash": "1c4fcb1d1fabef31f800a7473a4c8b75bb061e6c"
+        },
+        {
+            "parcelName": "KAFKA-2.1.2-1.2.1.2.p0.6-el6.parcel",
+            "components": [
+                {
+                    "pkg_version": "0.10.0+kafka2.1.2",
+                    "pkg_release": "1.2.1.2.p0.7",
+                    "name": "kafka",
+                    "version": "0.10.0-kafka2.1.2"
+                }
+            ],
+            "depends": "CDH (>= 5.2), CDH (<< 6.0)",
+            "replaces": "CLABS_KAFKA",
+            "hash": "a12fbd9f4a3f7fd6dab7b3fa24dce54a91983335"
+        },
+        {
+            "parcelName": "KAFKA-2.1.2-1.2.1.2.p0.6-sles11.parcel",
+            "components": [
+                {
+                    "pkg_version": "0.10.0+kafka2.1.2",
+                    "pkg_release": "1.2.1.2.p0.7",
+                    "name": "kafka",
+                    "version": "0.10.0-kafka2.1.2"
+                }
+            ],
+            "depends": "CDH (>= 5.2), CDH (<< 6.0)",
+            "replaces": "CLABS_KAFKA",
+            "hash": "30a8d8892324dd568c6030c729391144f587a1d2"
+        },
+        {
+            "parcelName": "KAFKA-2.1.2-1.2.1.2.p0.6-wheezy.parcel",
+            "components": [
+                {
+                    "pkg_version": "0.10.0+kafka2.1.2",
+                    "pkg_release": "1.2.1.2.p0.7",
+                    "name": "kafka",
+                    "version": "0.10.0-kafka2.1.2"
+                }
+            ],
+            "depends": "CDH (>= 5.2), CDH (<< 6.0)",
+            "replaces": "CLABS_KAFKA",
+            "hash": "cf541b2224295d8c271a538c66ba6854d055b6a9"
+        },
+        {
+            "parcelName": "KAFKA-2.1.2-1.2.1.2.p0.6-trusty.parcel",
+            "components": [
+                {
+                    "pkg_version": "0.10.0+kafka2.1.2",
+                    "pkg_release": "1.2.1.2.p0.7",
+                    "name": "kafka",
+                    "version": "0.10.0-kafka2.1.2"
+                }
+            ],
+            "depends": "CDH (>= 5.2), CDH (<< 6.0)",
+            "replaces": "CLABS_KAFKA",
+            "hash": "e647f374aa8ce27774c37905e37ff97b549daa1f"
+        }
+    ]
+}

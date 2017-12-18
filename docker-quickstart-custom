@@ -1,0 +1,251 @@
+#!/bin/sh
+
+# Packages install
+
+yum install -y yum-utils # for yumdb used in /home/cloudera/parcels
+
+# NTP
+
+yum install -y ntp
+chkconfig ntpd on
+ntpdate pool.ntp.org
+/etc/init.d/ntpd start
+
+# test : ntpdc -pn
+
+# Startup
+
+DAEMONS="mysqld cloudera-quickstart-init"
+for daemon in ${DAEMONS}; do
+    sudo service ${daemon} start
+done
+python -m SimpleHTTPServer 8900 > /dev/null 2>&1 &
+
+# Install CM with custom deployment (express-deployment.json)
+
+/home/cloudera/cloudera-manager --express
+
+# Parcels (CDH + KAFKA)
+
+/home/cloudera/parcels
+
+CM_API=/home/cloudera/cm_api.py
+CM_CLUSTER_NAME='Cloudera QuickStart'
+PARCEL_KAFKA_VERSION='2.1.2-1.2.1.2.p0.6'
+PARCEL_KAFKA_API=clusters/${CM_CLUSTER_NAME}/parcels/products/KAFKA/versions/${PARCEL_KAFKA_VERSION}
+
+function log() {
+    echo "[QuickStart] ${1}"
+}
+
+function post_parcel_kafka_command() {
+    COMMAND=${1}
+    ${CM_API} --method POST "${PARCEL_KAFKA_API}/commands/${COMMAND}" >/dev/null
+}
+
+function await_parcel_kafka_status() {
+    STATUS=${1}
+    while true; do
+        if ${CM_API} "${PARCEL_KAFKA_API}" | grep "\"stage\"\s*:\s*\"${STATUS}\"" >/dev/null; then
+            return 0
+        fi
+    done
+}
+
+log 'Downloading parcel...'
+post_parcel_kafka_command 'startDownload'
+await_parcel_kafka_status 'DOWNLOADED'
+
+log 'Distributing / decompressing parcel...'
+post_parcel_kafka_command 'startDistribution'
+await_parcel_kafka_status 'DISTRIBUTED'
+
+log 'Activating parcel...'
+post_parcel_kafka_command 'activate'
+await_parcel_kafka_status 'ACTIVATED'
+
+# Security
+
+/home/cloudera/kerberos
+
+function wait_until_last_cluster_command_finished() {
+    sleep 5
+
+    lastCommandFinished=$(curl -s \
+        -u cloudera:cloudera \
+        http://quickstart.cloudera:7180/api/v12/clusters/Cloudera%20QuickStart/commands \
+        -X GET | grep -c '"items" : \[ \]')
+
+    while [ "$lastCommandFinished" != "1" ]
+    do
+        sleep 2
+        lastCommandFinished=$(curl -s \
+            -u cloudera:cloudera \
+            http://quickstart.cloudera:7180/api/v12/clusters/Cloudera%20QuickStart/commands \
+            -X GET | grep -c '"items" : \[ \]')
+    done
+
+    sleep 2
+}
+
+function wait_until_last_cm_command_finished() {
+    sleep 5
+
+    lastCommandFinished=$(curl -s \
+        -u cloudera:cloudera \
+        http://quickstart.cloudera:7180/api/v12/cm/commands \
+        -X GET | grep -c '"items" : \[ \]')
+
+    while [ "$lastCommandFinished" != "1" ]
+    do
+        sleep 2
+        lastCommandFinished=$(curl -s \
+            -u cloudera:cloudera \
+            http://quickstart.cloudera:7180/api/v12/cm/commands \
+            -X GET | grep -c '"items" : \[ \]')
+    done
+
+    sleep 2
+}
+
+function wait_until_last_cm_service_command_finished() {
+    sleep 5
+
+    lastCommandFinished=$(curl -s \
+        -u cloudera:cloudera \
+        http://quickstart.cloudera:7180/api/v12/cm/service/commands \
+        -X GET | grep -c '"items" : \[ \]')
+
+    while [ "$lastCommandFinished" != "1" ]
+    do
+        sleep 2
+        lastCommandFinished=$(curl -s \
+            -u cloudera:cloudera \
+            http://quickstart.cloudera:7180/api/v12/cm/service/commands \
+            -X GET | grep -c '"items" : \[ \]')
+    done
+
+    sleep 2
+}
+
+# config Kerberos
+curl -v \
+    -u cloudera:cloudera \
+    http://quickstart.cloudera:7180/api/v12/cm/config?view=FULL \
+    -X PUT -H "Content-Type: application/json" \
+    --data '{"items": [ {"name": "KDC_HOST", "value": "quickstart.cloudera"}, {"name": "SECURITY_REALM", "value": "CLOUDERA"}, {"name": "KRB_ENC_TYPES", "value": "aes128-cts-hmac-sha1-96"}, {"name": "KRB_MANAGE_KRB5_CONF", "value": "false"} ] }'
+
+wait_until_last_cm_command_finished
+
+# enable Kerberos (CM)
+curl -v \
+    -u cloudera:cloudera \
+    http://quickstart.cloudera:7180/api/v12/clusters/Cloudera%20QuickStart/commands/configureForKerberos \
+    -X POST -H "Content-Type: application/json" \
+    --data '{"datanodeTransceiverPort" : 1004, "datanodeWebPort" : 1006}'
+
+wait_until_last_cm_command_finished
+
+# Import Kerberos Account Manager Credentials (from CM)
+#curl -v \
+#    -u cloudera:cloudera \
+#    http://quickstart.cloudera:7180/api/v8/cm/commands/importKerberosPrincipal?principal=cloudera-scm/admin@CLOUDERA\&password=cloudera\&kvno=1 \
+#    -X POST -H "Content-Type: application/json"
+
+curl -v \
+    -u cloudera:cloudera \
+    http://quickstart.cloudera:7180/api/v12/cm/commands/importAdminCredentials?username=cloudera-scm/admin@CLOUDERA\&password=cloudera \
+    -X POST -H "Content-Type: application/json"
+
+wait_until_last_cm_command_finished
+
+# Generate Missing Credentials (from CM)
+curl -v \
+    -u cloudera:cloudera \
+    http://quickstart.cloudera:7180/api/v12/cm/commands/generateCredentials \
+    -X POST -H "Content-Type: application/json"
+
+wait_until_last_cm_command_finished
+
+# update Kafka
+curl -v \
+    -u cloudera:cloudera \
+    http://quickstart.cloudera:7180/api/v12/clusters/Cloudera%20QuickStart/services/kafka/roles/kafka-KAFKA_BROKER/config?message="SASL" \
+    -X PUT -H "Content-Type: application/json" \
+    --data '{"items": [ {"name": "security.inter.broker.protocol", "value": "SASL_PLAINTEXT"}, {"name": "kafka.properties_role_safety_valve", "value": "listeners=SASL_PLAINTEXT://quickstart.cloudera:9092"} ] }'
+
+wait_until_last_cluster_command_finished
+
+# update Hive metastore
+curl -v \
+    -u cloudera:cloudera \
+    http://quickstart.cloudera:7180/api/v12/clusters/Cloudera%20QuickStart/services/hive/config \
+    -X PUT -H "Content-Type: application/json" \
+    --data '{"items": [ {"name": "hive_metastore_schema_verification", "value": "false"} ] }'
+
+wait_until_last_cluster_command_finished
+
+# RESTART
+
+# deploy client configuration
+curl -v \
+    -u cloudera:cloudera \
+    http://quickstart.cloudera:7180/api/v3/clusters/Cloudera%20QuickStart/commands/deployClientConfig \
+    -X POST -H "Content-Type: application/json"
+
+wait_until_last_cluster_command_finished
+
+<<NOTNECESSARY
+# bring host down before deploying Kerberos configuration
+
+# deploy Kerberos configuration
+curl -v \
+    -u cloudera:cloudera \
+    http://quickstart.cloudera:7180/api/v12/clusters/Cloudera%20QuickStart/commands/deployClusterClientConfig \
+    -X POST -H "Content-Type: application/json" \
+    --data '{"items": [ "quickstart.cloudera" ] }'
+
+wait_until_last_cluster_command_finished
+
+# up hosts
+NOTNECESSARY
+
+# restart Cloudera Management Service after enabling Kerberos
+curl -v \
+    -u cloudera:cloudera \
+    http://quickstart.cloudera:7180/api/v12/cm/service/commands/restart \
+    -X POST -H "Content-Type: application/json"
+
+wait_until_last_cm_service_command_finished
+
+# start all services
+curl -v \
+    -u cloudera:cloudera \
+    http://quickstart.cloudera:7180/api/v12/clusters/Cloudera%20QuickStart/commands/start \
+    -X POST -H "Content-Type: application/json"
+
+wait_until_last_cluster_command_finished
+
+#### CREATE USER
+SIMPLE_USER_NAME=simpleuser
+useradd -u 1001 "$SIMPLE_USER_NAME"
+
+HDFS_KEYTAB=$(find /var/run/cloudera-scm-agent/process/ -name 'hdfs.keytab' | grep 'hdfs-NAMENODE')
+kinit -kt $HDFS_KEYTAB hdfs/quickstart.cloudera@CLOUDERA
+
+hdfs dfs -mkdir /user/"$SIMPLE_USER_NAME"
+hdfs dfs -chown "$SIMPLE_USER_NAME":"$SIMPLE_USER_NAME" /user/"$SIMPLE_USER_NAME"
+hdfs dfs -chmod -R 777 /user/spark/applicationHistory
+
+# create Kerberos principal for this user
+kadmin -p cloudera-scm/admin <<EOF
+cloudera
+add_principal "$SIMPLE_USER_NAME"@CLOUDERA
+$SIMPLE_USER_NAME
+$SIMPLE_USER_NAME
+exit
+EOF
+
+kdestroy -A
+
+/bin/bash
