@@ -4,7 +4,7 @@ This image is based on cloudera/quickstart image, with :
 
 - parcels enabled (instead of Linux packages)
 - Kafka enabled (downloaded from a parcel)
-- Kerberos enabled
+- Kerberos enabled or not
 - a user "simpleuser" for testing stuff
 
 This image is just made for testing purpose and is a WIP, so please use carefully and at your own risk.
@@ -19,7 +19,8 @@ on `parcels/CDH` and `parcels/KAFKA` directories (read `README.md` inside those 
 To run the image :
 
 ```sh
-./run.sh
+./run_with_kerberos.sh
+./run_without_kerberos.sh
 ```
 
 `docker-quickstart-custom` will be launched. This could be quite long (10-15 minutes) to enable all
