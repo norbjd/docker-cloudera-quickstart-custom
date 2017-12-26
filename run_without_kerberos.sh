@@ -6,4 +6,4 @@ docker run \
     -i -t \
     --rm \
     --name 'cloudera-qs' \
-    norbjd/cloudera-quickstart-custom docker-quickstart-custom
+    norbjd/cloudera-quickstart-custom docker-quickstart-custom --without-kerberos

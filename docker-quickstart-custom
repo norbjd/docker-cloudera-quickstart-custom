@@ -1,5 +1,14 @@
 #!/bin/sh
 
+WITH_KERBEROS=0
+if [ "$1" == "--with-kerberos" ]
+then
+    WITH_KERBEROS=1
+elif [ "$1" == "--without-kerberos" ]
+then
+    WITH_KERBEROS=0
+fi
+
 # Packages install
 
 yum install -y yum-utils # for yumdb used in /home/cloudera/parcels
@@ -66,7 +75,10 @@ await_parcel_kafka_status 'ACTIVATED'
 
 # Security
 
-/home/cloudera/kerberos
+if [ $WITH_KERBEROS -eq 1 ]
+then
+    /home/cloudera/kerberos
+fi
 
 function wait_until_last_cluster_command_finished() {
     sleep 5
@@ -128,53 +140,56 @@ function wait_until_last_cm_service_command_finished() {
     sleep 2
 }
 
-# config Kerberos
-curl -v \
-    -u cloudera:cloudera \
-    http://quickstart.cloudera:7180/api/v12/cm/config?view=FULL \
-    -X PUT -H "Content-Type: application/json" \
-    --data '{"items": [ {"name": "KDC_HOST", "value": "quickstart.cloudera"}, {"name": "SECURITY_REALM", "value": "CLOUDERA"}, {"name": "KRB_ENC_TYPES", "value": "aes128-cts-hmac-sha1-96"}, {"name": "KRB_MANAGE_KRB5_CONF", "value": "false"} ] }'
+if [ $WITH_KERBEROS -eq 1 ]
+then
+    # config Kerberos
+    curl -v \
+        -u cloudera:cloudera \
+        http://quickstart.cloudera:7180/api/v12/cm/config?view=FULL \
+        -X PUT -H "Content-Type: application/json" \
+        --data '{"items": [ {"name": "KDC_HOST", "value": "quickstart.cloudera"}, {"name": "SECURITY_REALM", "value": "CLOUDERA"}, {"name": "KRB_ENC_TYPES", "value": "aes128-cts-hmac-sha1-96"}, {"name": "KRB_MANAGE_KRB5_CONF", "value": "false"} ] }'
 
-wait_until_last_cm_command_finished
+    wait_until_last_cm_command_finished
 
-# enable Kerberos (CM)
-curl -v \
-    -u cloudera:cloudera \
-    http://quickstart.cloudera:7180/api/v12/clusters/Cloudera%20QuickStart/commands/configureForKerberos \
-    -X POST -H "Content-Type: application/json" \
-    --data '{"datanodeTransceiverPort" : 1004, "datanodeWebPort" : 1006}'
+    # enable Kerberos (CM)
+    curl -v \
+        -u cloudera:cloudera \
+        http://quickstart.cloudera:7180/api/v12/clusters/Cloudera%20QuickStart/commands/configureForKerberos \
+        -X POST -H "Content-Type: application/json" \
+        --data '{"datanodeTransceiverPort" : 1004, "datanodeWebPort" : 1006}'
 
-wait_until_last_cm_command_finished
+    wait_until_last_cm_command_finished
 
-# Import Kerberos Account Manager Credentials (from CM)
-#curl -v \
-#    -u cloudera:cloudera \
-#    http://quickstart.cloudera:7180/api/v8/cm/commands/importKerberosPrincipal?principal=cloudera-scm/admin@CLOUDERA\&password=cloudera\&kvno=1 \
-#    -X POST -H "Content-Type: application/json"
+    # Import Kerberos Account Manager Credentials (from CM)
+    #curl -v \
+    #    -u cloudera:cloudera \
+    #    http://quickstart.cloudera:7180/api/v8/cm/commands/importKerberosPrincipal?principal=cloudera-scm/admin@CLOUDERA\&password=cloudera\&kvno=1 \
+    #    -X POST -H "Content-Type: application/json"
 
-curl -v \
-    -u cloudera:cloudera \
-    http://quickstart.cloudera:7180/api/v12/cm/commands/importAdminCredentials?username=cloudera-scm/admin@CLOUDERA\&password=cloudera \
-    -X POST -H "Content-Type: application/json"
+    curl -v \
+        -u cloudera:cloudera \
+        http://quickstart.cloudera:7180/api/v12/cm/commands/importAdminCredentials?username=cloudera-scm/admin@CLOUDERA\&password=cloudera \
+        -X POST -H "Content-Type: application/json"
 
-wait_until_last_cm_command_finished
+    wait_until_last_cm_command_finished
 
-# Generate Missing Credentials (from CM)
-curl -v \
-    -u cloudera:cloudera \
-    http://quickstart.cloudera:7180/api/v12/cm/commands/generateCredentials \
-    -X POST -H "Content-Type: application/json"
+    # Generate Missing Credentials (from CM)
+    curl -v \
+        -u cloudera:cloudera \
+        http://quickstart.cloudera:7180/api/v12/cm/commands/generateCredentials \
+        -X POST -H "Content-Type: application/json"
 
-wait_until_last_cm_command_finished
+    wait_until_last_cm_command_finished
 
-# update Kafka
-curl -v \
-    -u cloudera:cloudera \
-    http://quickstart.cloudera:7180/api/v12/clusters/Cloudera%20QuickStart/services/kafka/roles/kafka-KAFKA_BROKER/config?message="SASL" \
-    -X PUT -H "Content-Type: application/json" \
-    --data '{"items": [ {"name": "security.inter.broker.protocol", "value": "SASL_PLAINTEXT"}, {"name": "kafka.properties_role_safety_valve", "value": "listeners=SASL_PLAINTEXT://quickstart.cloudera:9092"} ] }'
+    # update Kafka
+    curl -v \
+        -u cloudera:cloudera \
+        http://quickstart.cloudera:7180/api/v12/clusters/Cloudera%20QuickStart/services/kafka/roles/kafka-KAFKA_BROKER/config?message="SASL" \
+        -X PUT -H "Content-Type: application/json" \
+        --data '{"items": [ {"name": "security.inter.broker.protocol", "value": "SASL_PLAINTEXT"}, {"name": "kafka.properties_role_safety_valve", "value": "listeners=SASL_PLAINTEXT://quickstart.cloudera:9092"} ] }'
 
-wait_until_last_cluster_command_finished
+    wait_until_last_cluster_command_finished
+fi
 
 # update Hive metastore
 curl -v \
@@ -210,7 +225,7 @@ wait_until_last_cluster_command_finished
 # up hosts
 NOTNECESSARY
 
-# restart Cloudera Management Service after enabling Kerberos
+# restart Cloudera Management Service
 curl -v \
     -u cloudera:cloudera \
     http://quickstart.cloudera:7180/api/v12/cm/service/commands/restart \
@@ -230,13 +245,20 @@ wait_until_last_cluster_command_finished
 SIMPLE_USER_NAME=simpleuser
 useradd -u 1001 "$SIMPLE_USER_NAME"
 
-HDFS_KEYTAB=$(find /var/run/cloudera-scm-agent/process/ -name 'hdfs.keytab' | grep 'hdfs-NAMENODE')
-kinit -kt $HDFS_KEYTAB hdfs/quickstart.cloudera@CLOUDERA
+if [ $WITH_KERBEROS -eq 1 ]
+then
+    HDFS_KEYTAB=$(find /var/run/cloudera-scm-agent/process/ -name 'hdfs.keytab' | grep 'hdfs-NAMENODE')
+    kinit -kt $HDFS_KEYTAB hdfs/quickstart.cloudera@CLOUDERA
+else
+    export HADOOP_USER_NAME="hdfs"
+fi
 
 hdfs dfs -mkdir /user/"$SIMPLE_USER_NAME"
 hdfs dfs -chown "$SIMPLE_USER_NAME":"$SIMPLE_USER_NAME" /user/"$SIMPLE_USER_NAME"
 hdfs dfs -chmod -R 777 /user/spark/applicationHistory
 
+if [ $WITH_KERBEROS -eq 1 ]
+then
 # create Kerberos principal for this user
 kadmin -p cloudera-scm/admin <<EOF
 cloudera
@@ -247,5 +269,6 @@ exit
 EOF
 
 kdestroy -A
+fi
 
 /bin/bash
